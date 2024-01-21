@@ -1,13 +1,15 @@
 
-# Ludo 
+# Pathfinder
 
-A third semester project on Object Oriented Programming made by Computer Engineering students of IOE Pulchowk Campus. Made using C++ and SFML.
+A fourth semester project on Data Structures And Algorithms made by Computer Engineering students of IOE Pulchowk Campus. Made using C++ and SFML.
+
 ## Contributors
 
 - [Bishal Lamichhane](https://www.github.com/bishallamichhane44) (078BCT035)
+- [Roshan Karki](https://github.com/roshankc00) (078BCT098)
 - [Bipin Bashyal](https://www.github.com/bipinbashyal) (078BCT033)
 - [Ayush KC](https://www.github.com/AyusK4) (078BCT025)
-- [Roshan Karki](https://github.com/roshankc00) (078BCT098)
+
 
 
 
