@@ -48,7 +48,12 @@ Add path to environment variables for:
 ```
   + Double click o.bat.
   + Double click exe.bat.
-  + Main.exe will appear.(Open it to play the game).
+  + Main.exe will appear.(Open it to Run the program).
+
+
+### Note:
+- You must use above mentioned MinGW and SFML versions (Download from the link). Remove your already existing versions.
+
 
 
 
