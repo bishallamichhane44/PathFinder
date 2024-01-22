@@ -6,6 +6,7 @@ using namespace std;
 
 // Font manager class
 class UseFonts {
+    //Made to make loading and using fonts easier.
 public:
     sf::Font font;
 
@@ -31,6 +32,8 @@ class spriteManager {
     
 
     spriteManager(const std::string& spriteName, const std::string& textureFileLocation , int posx=0, int posy=0) {
+        //This function will create a sprite with the name passed as the parameter and add the texture given as parameter.
+        //posx,posy refers to the position of the sprite in the window.
         posX=posx;
         posY=posy;
 
@@ -42,12 +45,14 @@ class spriteManager {
     }
 
     void updatePos(int posx, int posy) {
+        //Code to update the position of the sprite.
         posX = posx;
         posY = posy;
         sprite.setPosition(posX, posY);
     }
 
     void updateTexture(const std::string& textureFileLocation) {
+        //This code will update the texture of the sprite.
         if (!texture.loadFromFile(textureFileLocation)) {
             throw std::runtime_error("Failed to load texture: " + textureFileLocation);
         }
@@ -59,14 +64,104 @@ class spriteManager {
 
 
     void displaySprite(sf::RenderWindow& window) {
+        //code to draw the sprite on the window passed as the parameter.
         window.draw(sprite);
         
     }
 };
 
+//Sprite Objects "I have used cat object as a sample object".
 spriteManager cat("Cat","sprites/cat.png",10,100);
 
+void displayGrid(sf::RenderWindow& window, int rows, int columns) {
 
+    //code to generate the grid.
+    float windowWidth = static_cast<float>(window.getSize().x);
+    float windowHeight = static_cast<float>(window.getSize().y);
+    float cellWidth = windowWidth / columns;
+    float cellHeight = windowHeight / rows;
+
+    sf::RectangleShape cell(sf::Vector2f(cellWidth, cellHeight));
+    cell.setFillColor(sf::Color::Transparent);
+    cell.setOutlineThickness(1.0f);
+    cell.setOutlineColor(sf::Color::White);
+
+    for (int row = 0; row < rows; ++row) {
+        for (int column = 0; column < columns; ++column) {
+            cell.setPosition(column * cellWidth, row * cellHeight);
+            window.draw(cell);
+        }
+    }
+
+
+/*     //Code to draw the red indicator under mouse pointer.
+    sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+    int rowUnderMouse = mousePos.y / static_cast<int>(cellHeight);
+    int columnUnderMouse = mousePos.x / static_cast<int>(cellWidth);
+
+    for (int row = 0; row < rows; ++row) {
+        for (int column = 0; column < columns; ++column) {
+            if (row == rowUnderMouse && column == columnUnderMouse) {
+                cell.setFillColor(sf::Color::Red);
+            } else {
+                cell.setFillColor(sf::Color::Transparent);
+            }
+            cell.setPosition(column * cellWidth, row * cellHeight);
+            window.draw(cell);
+        }
+    }
+ */
+
+
+
+// Code to color the cell green under the mouse cursor and black for cells selected with click and drag
+sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+int rowUnderMouse = mousePos.y / static_cast<int>(cellHeight);
+int columnUnderMouse = mousePos.x / static_cast<int>(cellWidth);
+
+bool mouseHeld = sf::Mouse::isButtonPressed(sf::Mouse::Left);
+static bool dragging = false;
+static std::vector<sf::Vector2i> selectedCells;
+
+// Start dragging
+if (mouseHeld && !dragging) {
+    dragging = true;
+    selectedCells.clear();
+}
+
+// While dragging, add cells to the selection
+if (dragging && mouseHeld) {
+    selectedCells.push_back({columnUnderMouse, rowUnderMouse});
+}
+
+// Stop dragging
+if (!mouseHeld && dragging) {
+    dragging = false;
+}
+
+// Draw cells
+for (int row = 0; row < rows; ++row) {
+    for (int column = 0; column < columns; ++column) {
+        // Check if the current cell is being dragged over
+        bool cellSelected = std::find(selectedCells.begin(), selectedCells.end(), sf::Vector2i(column, row)) != selectedCells.end();
+        
+        if (row == rowUnderMouse && column == columnUnderMouse) {
+            cell.setFillColor(sf::Color::Green); // Green color for cell under mouse
+        } else if (cellSelected) {
+            cell.setFillColor(sf::Color::Black); // Black color for selected cells
+        } else {
+            cell.setFillColor(sf::Color::Transparent);
+        }
+        
+        cell.setPosition(column * cellWidth, row * cellHeight);
+        window.draw(cell);
+    }
+}
+
+
+   
+
+}
 
 
 
@@ -77,11 +172,12 @@ int main() {
   
 
    
-    sf::Text text("Hello", roboto.font, 50);
+    /* sf::Text text("Hello", roboto.font, 50);
     text.setFillColor(sf::Color::Blue);
-    text.setPosition(300, 250);
-    cout<<"Cat Position : "<<cat.sprite.getPosition().x<<endl;
-    float catSpeed = 1; // Speed at which the cat moves across the screen
+    text.setPosition(300, 250); */
+    
+   
+    
 
     while (window.isOpen()) {
         sf::Event event;
@@ -89,27 +185,16 @@ int main() {
         sf::Vector2u windowSize = window.getSize();
         sf::Vector2f catPosition = cat.sprite.getPosition();
         
-        
-
-        // If the cat reaches the right side of the screen, reverse the direction
-        if (catPosition.x + cat.sprite.getGlobalBounds().width >= windowSize.x) {
-            catSpeed = -catSpeed;
-        }
-        // If the cat reaches the left side of the screen, reverse the direction
-        else if (catPosition.x <= 0) {
-            catSpeed = -catSpeed;
-        }
-
-        // Update the cat's position
-        cat.updatePos(catPosition.x + catSpeed, catPosition.y);
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed)
                 window.close();
         }
 
         window.clear(sf::Color(240, 240, 240)); // Light grey background, close to white
-        cat.displaySprite(window);
-        window.draw(text);
+        displayGrid(window,36,64);
+       /*  cat.displaySprite(window);  */
+        
+       
         window.display();
     }
 
