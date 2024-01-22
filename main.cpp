@@ -73,7 +73,13 @@ class spriteManager {
 //Sprite Objects "I have used cat object as a sample object".
 spriteManager cat("Cat","sprites/cat.png",10,100);
 
-void displayGrid(sf::RenderWindow& window, int rows, int columns, bool colorToggle, bool & clear) {
+
+
+//keep track of last added cell to avoid duplicate addition.
+static int lastcol=0;
+static int lastrow=0;
+
+void displayGrid(sf::RenderWindow& window, int rows, int columns, bool colorToggle, bool & clear,bool & undo) {
 
     //code to generate the grid.
     float windowWidth = static_cast<float>(window.getSize().x);
@@ -133,6 +139,15 @@ static std::vector<sf::Vector2i> selectedCells;
         selectedCells.clear();
         clear=false;
     }
+    if(undo==true){
+        
+        if(selectedCells.size()>0){
+            selectedCells.pop_back();
+            cout<<"Undo"<<endl;
+        }
+     
+        undo=false;
+    }
 
 
 
@@ -146,7 +161,13 @@ if (mouseHeld && !dragging && colorToggle ) {
 
 // While dragging, add cells to the selection
 if (dragging && mouseHeld && colorToggle) {
-    selectedCells.push_back({columnUnderMouse, rowUnderMouse});
+    if (rowUnderMouse != lastrow || columnUnderMouse != lastcol) {
+        selectedCells.push_back({columnUnderMouse, rowUnderMouse});
+        lastcol=columnUnderMouse;
+        lastrow=rowUnderMouse;
+        
+    }
+    
 }
 
 // Stop dragging
@@ -163,9 +184,9 @@ for (int row = 0; row < rows; ++row) {
         bool cellSelected = std::find(selectedCells.begin(), selectedCells.end(), sf::Vector2i(column, row)) != selectedCells.end();
 
         if (row == rowUnderMouse && column == columnUnderMouse && colorToggle) {
-            cell.setFillColor(sf::Color::Green); // Green color for cell under mouse
+            cell.setFillColor(sf::Color::Blue); // Green color for cell under mouse
         } else if (row == rowUnderMouse && column == columnUnderMouse && !colorToggle ) {
-            cell.setFillColor(sf::Color::Blue); // Black color for selected cells if toggle is on
+            cell.setFillColor(sf::Color::Green); // Black color for selected cells if toggle is on
         }else if (cellSelected ) {
             cell.setFillColor(sf::Color::Black); // Black color for selected cells if toggle is on
         } else {
@@ -195,7 +216,8 @@ int main() {
     
    
     static bool colorToggle = true;
-     bool clear=false;
+    bool clear=false;
+    bool undo=false;
 
 
     while (window.isOpen()) {
@@ -216,6 +238,9 @@ int main() {
             if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::C) {
                 clear=true;
             }
+            if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::K) {
+                undo=true;
+            }
         }
 
 
@@ -224,7 +249,7 @@ int main() {
    
 
         window.clear(sf::Color(240, 240, 240)); // Light grey background, close to white
-        displayGrid(window,36,64,colorToggle,clear);
+        displayGrid(window,36,64,colorToggle,clear,undo);
        /*  cat.displaySprite(window);  */
 
         
