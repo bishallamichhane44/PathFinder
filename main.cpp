@@ -79,7 +79,7 @@ spriteManager cat("Cat","sprites/cat.png",10,100);
 static int lastcol=0;
 static int lastrow=0;
 
-void displayGrid(sf::RenderWindow& window, int rows, int columns, bool colorToggle, bool & clear,bool & undo) {
+void displayGrid(sf::RenderWindow& window, int rows, int columns, bool colorToggle, bool & clear,bool & undo,bool & initials) {
 
     //code to generate the grid.
     float windowWidth = static_cast<float>(window.getSize().x);
@@ -128,6 +128,11 @@ int columnUnderMouse = mousePos.x / static_cast<int>(cellWidth);
 bool mouseHeld = sf::Mouse::isButtonPressed(sf::Mouse::Left);
 static bool dragging = false;
 static std::vector<sf::Vector2i> selectedCells;
+static int startx=-2;
+static int starty=-2;
+static int endx=-2;
+static int endy=-2; 
+static int tracker=0;
 
 
 
@@ -154,19 +159,42 @@ static std::vector<sf::Vector2i> selectedCells;
 // Start dragging
 if (mouseHeld && !dragging && colorToggle ) {
     dragging = true;
-
-    
-    
 }
+
 
 // While dragging, add cells to the selection
 if (dragging && mouseHeld && colorToggle) {
+   
+    
     if (rowUnderMouse != lastrow || columnUnderMouse != lastcol) {
-        selectedCells.push_back({columnUnderMouse, rowUnderMouse});
+        if(initials){
+            if(tracker==0){
+                startx=columnUnderMouse;
+                starty=rowUnderMouse;
+            }else{
+                endx=columnUnderMouse;
+                endy=rowUnderMouse;
+
+            }
+            
+            
+            tracker++;
+            if(tracker>=2){
+                initials=false;
+            }
+            
+            
+        }else{
+            selectedCells.push_back({columnUnderMouse, rowUnderMouse});
+
+        }
+        
         lastcol=columnUnderMouse;
         lastrow=rowUnderMouse;
         
     }
+
+    
     
 }
 
@@ -177,13 +205,25 @@ if (!mouseHeld && dragging && colorToggle) {
 
 
 
+
+
+
+
+
 // Draw cells
 for (int row = 0; row < rows; ++row) {
     for (int column = 0; column < columns; ++column) {
         // Check if the current cell is being dragged over
         bool cellSelected = std::find(selectedCells.begin(), selectedCells.end(), sf::Vector2i(column, row)) != selectedCells.end();
+       
+       if(row == starty && column == startx){
+            cell.setFillColor(sf::Color::Yellow); }
 
-        if (row == rowUnderMouse && column == columnUnderMouse && colorToggle) {
+            else if(row == endy && column == endx){
+                cell.setFillColor(sf::Color::Red);
+
+            }
+       else{ if (row == rowUnderMouse && column == columnUnderMouse && colorToggle) {
             cell.setFillColor(sf::Color::Blue); // Green color for cell under mouse
         } else if (row == rowUnderMouse && column == columnUnderMouse && !colorToggle ) {
             cell.setFillColor(sf::Color::Green); // Black color for selected cells if toggle is on
@@ -191,7 +231,9 @@ for (int row = 0; row < rows; ++row) {
             cell.setFillColor(sf::Color::Black); // Black color for selected cells if toggle is on
         } else {
             cell.setFillColor(sf::Color::Transparent);
-        }
+        }}
+
+      
 
         cell.setPosition(column * cellWidth, row * cellHeight);
         window.draw(cell);
@@ -218,6 +260,7 @@ int main() {
     static bool colorToggle = true;
     bool clear=false;
     bool undo=false;
+    bool initials=true;
 
 
     while (window.isOpen()) {
@@ -249,7 +292,7 @@ int main() {
    
 
         window.clear(sf::Color(240, 240, 240)); // Light grey background, close to white
-        displayGrid(window,36,64,colorToggle,clear,undo);
+        displayGrid(window,36,64,colorToggle,clear,undo,initials);
        /*  cat.displaySprite(window);  */
 
         
