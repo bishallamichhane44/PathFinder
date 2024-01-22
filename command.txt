@@ -1,1 +1,0 @@
-write code that would colour green the cell under current cursor location and give black colour to the cells selected by click and drag operation of mouse. The feature of colouring the cells black must be toggled on and off by pressing keyboard key c. All previous black coloured cells must be display till the end of porgram.
