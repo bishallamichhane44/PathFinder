@@ -73,7 +73,7 @@ class spriteManager {
 //Sprite Objects "I have used cat object as a sample object".
 spriteManager cat("Cat","sprites/cat.png",10,100);
 
-void displayGrid(sf::RenderWindow& window, int rows, int columns) {
+void displayGrid(sf::RenderWindow& window, int rows, int columns, bool colorToggle, bool & clear) {
 
     //code to generate the grid.
     float windowWidth = static_cast<float>(window.getSize().x);
@@ -123,43 +123,60 @@ bool mouseHeld = sf::Mouse::isButtonPressed(sf::Mouse::Left);
 static bool dragging = false;
 static std::vector<sf::Vector2i> selectedCells;
 
+
+
+// Variable to toggle cell selection coloring
+
+
+    if(clear==true){
+        cout<<"Screen Cleared"<<endl;
+        selectedCells.clear();
+        clear=false;
+    }
+
+
+
 // Start dragging
-if (mouseHeld && !dragging) {
+if (mouseHeld && !dragging && colorToggle ) {
     dragging = true;
-    selectedCells.clear();
+
+    
+    
 }
 
 // While dragging, add cells to the selection
-if (dragging && mouseHeld) {
+if (dragging && mouseHeld && colorToggle) {
     selectedCells.push_back({columnUnderMouse, rowUnderMouse});
 }
 
 // Stop dragging
-if (!mouseHeld && dragging) {
+if (!mouseHeld && dragging && colorToggle) {
     dragging = false;
 }
+
+
 
 // Draw cells
 for (int row = 0; row < rows; ++row) {
     for (int column = 0; column < columns; ++column) {
         // Check if the current cell is being dragged over
         bool cellSelected = std::find(selectedCells.begin(), selectedCells.end(), sf::Vector2i(column, row)) != selectedCells.end();
-        
-        if (row == rowUnderMouse && column == columnUnderMouse) {
+
+        if (row == rowUnderMouse && column == columnUnderMouse && colorToggle) {
             cell.setFillColor(sf::Color::Green); // Green color for cell under mouse
-        } else if (cellSelected) {
-            cell.setFillColor(sf::Color::Black); // Black color for selected cells
+        } else if (row == rowUnderMouse && column == columnUnderMouse && !colorToggle ) {
+            cell.setFillColor(sf::Color::Blue); // Black color for selected cells if toggle is on
+        }else if (cellSelected ) {
+            cell.setFillColor(sf::Color::Black); // Black color for selected cells if toggle is on
         } else {
             cell.setFillColor(sf::Color::Transparent);
         }
-        
+
         cell.setPosition(column * cellWidth, row * cellHeight);
         window.draw(cell);
     }
 }
 
-
-   
 
 }
 
@@ -177,7 +194,9 @@ int main() {
     text.setPosition(300, 250); */
     
    
-    
+    static bool colorToggle = true;
+     bool clear=false;
+
 
     while (window.isOpen()) {
         sf::Event event;
@@ -188,11 +207,28 @@ int main() {
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed)
                 window.close();
+
+             if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::T) {
+            colorToggle = !colorToggle; // Toggle the coloring feature
+            }
+            
+            //Toogle screen clear
+            if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::C) {
+                clear=true;
+            }
         }
 
+
+
+    
+   
+
         window.clear(sf::Color(240, 240, 240)); // Light grey background, close to white
-        displayGrid(window,36,64);
+        displayGrid(window,36,64,colorToggle,clear);
        /*  cat.displaySprite(window);  */
+
+        
+
         
        
         window.display();
