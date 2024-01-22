@@ -1,6 +1,10 @@
 {
     "files.associations": {
         "iostream": "cpp",
-        "source_location": "cpp"
+        "source_location": "cpp",
+        "cmath": "cpp",
+        "*.tcc": "cpp",
+        "functional": "cpp",
+        "limits": "cpp"
     }
 }

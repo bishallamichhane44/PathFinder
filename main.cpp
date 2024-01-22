@@ -1,4 +1,5 @@
 #include <SFML/Graphics.hpp>
+#include<math.h>
 #include <windows.h>
 #include <iostream>
 using namespace std;
@@ -74,14 +75,32 @@ class spriteManager {
 spriteManager cat("Cat","sprites/cat.png",10,100);
 
 
+class cell{
+    public:
+    int x;
+    int y;
+};
+cell start_cell,end_cell;
+
+
 
 //keep track of last added cell to avoid duplicate addition.
 static int lastcol=0;
 static int lastrow=0;
 
+//cells selected using black colour .. acts as bolckade in the path.
+static std::vector<sf::Vector2i> selectedCells;
+int total_rows;
+int total_cols;
+
+
+
+
 void displayGrid(sf::RenderWindow& window, int rows, int columns, bool colorToggle, bool & clear,bool & undo,bool & initials) {
 
     //code to generate the grid.
+    total_cols=columns;
+    total_rows=rows;
     float windowWidth = static_cast<float>(window.getSize().x);
     float windowHeight = static_cast<float>(window.getSize().y);
     float cellWidth = windowWidth / columns;
@@ -100,23 +119,6 @@ void displayGrid(sf::RenderWindow& window, int rows, int columns, bool colorTogg
     }
 
 
-/*     //Code to draw the red indicator under mouse pointer.
-    sf::Vector2i mousePos = sf::Mouse::getPosition(window);
-    int rowUnderMouse = mousePos.y / static_cast<int>(cellHeight);
-    int columnUnderMouse = mousePos.x / static_cast<int>(cellWidth);
-
-    for (int row = 0; row < rows; ++row) {
-        for (int column = 0; column < columns; ++column) {
-            if (row == rowUnderMouse && column == columnUnderMouse) {
-                cell.setFillColor(sf::Color::Red);
-            } else {
-                cell.setFillColor(sf::Color::Transparent);
-            }
-            cell.setPosition(column * cellWidth, row * cellHeight);
-            window.draw(cell);
-        }
-    }
- */
 
 
 
@@ -127,12 +129,20 @@ int columnUnderMouse = mousePos.x / static_cast<int>(cellWidth);
 
 bool mouseHeld = sf::Mouse::isButtonPressed(sf::Mouse::Left);
 static bool dragging = false;
-static std::vector<sf::Vector2i> selectedCells;
-static int startx=-2;
-static int starty=-2;
-static int endx=-2;
-static int endy=-2; 
+
+
+//Variable to keep track of the start and end of the selected cells
+static int startx;
+static int starty;
+static int endx;
+static int endy; 
 static int tracker=0;
+
+
+start_cell.x=startx;
+start_cell.y=starty;
+end_cell.x=endx;
+end_cell.y=endy;
 
 
 
@@ -242,6 +252,73 @@ for (int row = 0; row < rows; ++row) {
 
 
 }
+
+const int FLT_MAX=10;
+class Node {
+public:
+    int x, y;
+    float gCost, hCost, fCost;
+    bool open, close, visited,blocked=false;
+    Node* parent;
+    std::vector<Node*> neighbours;
+
+    Node(int x, int y) : x(x), y(y), gCost(FLT_MAX), hCost(FLT_MAX), fCost(FLT_MAX), parent(nullptr), open(false), close(false), visited(false) {}
+
+    void calculateCost(Node* startNode,Node* endNode) {
+        // Assuming a uniform cost, update this if the cost is variable
+        gCost = std::hypot(x - startNode->x, y - startNode->y);
+        hCost = std::hypot(x - endNode->x, y - endNode->y);
+        fCost = gCost + hCost;
+    }
+
+    void addNeighbour(Node* neighbour) {
+        neighbours.push_back(neighbour);
+    }
+};
+
+class NodeContainer {
+public:
+    std::vector<std::vector<Node>> nodes;
+    Node* startNode;
+    Node* endNode;
+
+    NodeContainer(int rows, int columns) : startNode(nullptr), endNode(nullptr) {
+        nodes.reserve(rows);
+        for (int i = 0; i < rows; ++i) {
+            nodes.push_back(std::vector<Node>());
+            nodes[i].reserve(columns);
+            for (int j = 0; j < columns; ++j) {
+                bool cellSelected = std::find(selectedCells.begin(), selectedCells.end(), sf::Vector2i(j, i)) != selectedCells.end();
+                if(cellSelected){
+                   
+                    nodes[i][j].blocked=true;
+                }
+                nodes[i].emplace_back(j, i);
+            }
+        }
+    }
+
+    void setStartNode(int x, int y) {
+        startNode = &nodes[y][x];
+        startNode->open = true; // Start node is always open to begin with
+    }
+
+    void setEndNode(int x, int y) {
+        endNode = &nodes[y][x];
+    }
+
+    Node* getNode(int x, int y) {
+        return &nodes[y][x];
+    }
+};
+
+
+
+std::vector<Node> getShortestPath(){
+    NodeContainer nodecontainer(total_rows, total_cols);
+    nodecontainer.setStartNode(start_cell.x,start_cell.y);
+    nodecontainer.setEndNode(end_cell.x,end_cell.y);
+};
 
 
 
