@@ -4,72 +4,17 @@
 #include <iostream>
 using namespace std;
 
+#include "./includes/fonts.cpp"
+#include "./includes/spriteManager.cpp"
+#include "./includes/node.cpp"
 
-// Font manager class
-class UseFonts {
-    //Made to make loading and using fonts easier.
-public:
-    sf::Font font;
 
-    UseFonts(const std::string& fontName, const std::string& fontFileLocation) {
-        if (!font.loadFromFile(fontFileLocation)) {
-            throw std::runtime_error("Failed to load font: " + fontName);
-        }
-    }
-};
-//Font Objects 
+
 UseFonts colus("colus.otf", "fonts/colus.otf");
 UseFonts roboto("roboto.otf", "fonts/roboto.ttf");
 
 
-class spriteManager {
-    private:
-        int posX;
-        int posY;
 
-    public:
-    sf::Sprite sprite;
-    sf::Texture texture;
-    
-
-    spriteManager(const std::string& spriteName, const std::string& textureFileLocation , int posx=0, int posy=0) {
-        //This function will create a sprite with the name passed as the parameter and add the texture given as parameter.
-        //posx,posy refers to the position of the sprite in the window.
-        posX=posx;
-        posY=posy;
-
-        if (!texture.loadFromFile(textureFileLocation)) {
-            throw std::runtime_error("Failed to load texture: " + spriteName);
-        }
-        sprite.setTexture(texture);
-        sprite.setPosition(posX, posY);
-    }
-
-    void updatePos(int posx, int posy) {
-        //Code to update the position of the sprite.
-        posX = posx;
-        posY = posy;
-        sprite.setPosition(posX, posY);
-    }
-
-    void updateTexture(const std::string& textureFileLocation) {
-        //This code will update the texture of the sprite.
-        if (!texture.loadFromFile(textureFileLocation)) {
-            throw std::runtime_error("Failed to load texture: " + textureFileLocation);
-        }
-        sprite.setTexture(texture);
-    }
-
-   
-
-
-
-    void displaySprite(sf::RenderWindow& window) {
-        //code to draw the sprite on the window passed as the parameter.
-        window.draw(sprite);
-        
-    }
-};
 
 //Sprite Objects "I have used cat object as a sample object".
 spriteManager cat("Cat","sprites/cat.png",10,100);
@@ -253,72 +198,12 @@ for (int row = 0; row < rows; ++row) {
 
 }
 
-const int FLT_MAX=10;
-class Node {
-public:
-    int x, y;
-    float gCost, hCost, fCost;
-    bool open, close, visited,blocked=false;
-    Node* parent;
-    std::vector<Node*> neighbours;
-
-    Node(int x, int y) : x(x), y(y), gCost(FLT_MAX), hCost(FLT_MAX), fCost(FLT_MAX), parent(nullptr), open(false), close(false), visited(false) {}
-
-    void calculateCost(Node* startNode,Node* endNode) {
-        // Assuming a uniform cost, update this if the cost is variable
-        gCost = std::hypot(x - startNode->x, y - startNode->y);
-        hCost = std::hypot(x - endNode->x, y - endNode->y);
-        fCost = gCost + hCost;
-    }
-
-    void addNeighbour(Node* neighbour) {
-        neighbours.push_back(neighbour);
-    }
-};
-
-class NodeContainer {
-public:
-    std::vector<std::vector<Node>> nodes;
-    Node* startNode;
-    Node* endNode;
-
-    NodeContainer(int rows, int columns) : startNode(nullptr), endNode(nullptr) {
-        nodes.reserve(rows);
-        for (int i = 0; i < rows; ++i) {
-            nodes.push_back(std::vector<Node>());
-            nodes[i].reserve(columns);
-            for (int j = 0; j < columns; ++j) {
-                bool cellSelected = std::find(selectedCells.begin(), selectedCells.end(), sf::Vector2i(j, i)) != selectedCells.end();
-                if(cellSelected){
-                   
-                    nodes[i][j].blocked=true;
-                }
-                nodes[i].emplace_back(j, i);
-            }
-        }
-    }
-
-    void setStartNode(int x, int y) {
-        startNode = &nodes[y][x];
-        startNode->open = true; // Start node is always open to begin with
-    }
-
-    void setEndNode(int x, int y) {
-        endNode = &nodes[y][x];
-    }
-
-    Node* getNode(int x, int y) {
-        return &nodes[y][x];
-    }
-};
 
 
 
-std::vector<Node> getShortestPath(){
-    NodeContainer nodecontainer(total_rows, total_cols);
-    nodecontainer.setStartNode(start_cell.x,start_cell.y);
-    nodecontainer.setEndNode(end_cell.x,end_cell.y);
-};
+
+
+
 
 
 
@@ -326,13 +211,7 @@ int main() {
     sf::RenderWindow window;
     window.create(sf::VideoMode(1280, 720), "SFML window", sf::Style::Titlebar | sf::Style::Close);
    
-  
 
-   
-    /* sf::Text text("Hello", roboto.font, 50);
-    text.setFillColor(sf::Color::Blue);
-    text.setPosition(300, 250); */
-    
    
     static bool colorToggle = true;
     bool clear=false;
@@ -374,8 +253,7 @@ int main() {
 
         
 
-        
-       
+  
         window.display();
     }
 
