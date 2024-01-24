@@ -48,7 +48,7 @@ class window_settings{
 
 };
 
-window_settings Window(36*2,64*2);
+window_settings Window(18,32);
 
 class cell{
     public:
@@ -142,11 +142,14 @@ class Grid{
                 int columnUnderMouse = mousePos.x / static_cast<int>(Window.cellWidth);
                 grid[i][j].isunderCursor=false;
                 if(i==rowUnderMouse && j==columnUnderMouse){
-                    
                     grid[i][j].isunderCursor=true;
 
                     if(sf::Mouse::isButtonPressed(sf::Mouse::Left) && Window.block_inserting==true){
-                        grid[i][j].isBlocked=true;
+                        if(grid[i][j].isStart==false && grid[i][j].isEnd==false){
+                            grid[i][j].isBlocked=true;
+
+                        }
+                        
                     }else if(sf::Mouse::isButtonPressed(sf::Mouse::Left) && Window.erasing==true){
                         grid[i][j].isBlocked=false;
                     }else if(sf::Mouse::isButtonPressed(sf::Mouse::Left) && Window.start==true){
@@ -156,11 +159,6 @@ class Grid{
                         grid[i][j].isEnd=true;
                         Window.end=false;
                     }
-                    
-
-
-                    
-                
 
                 }
              
@@ -199,7 +197,7 @@ void handle_events(sf::RenderWindow &window)
         }
 
         // T -> To erase the blocks
-        if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::T)
+        if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::T )
         {
             Window.block_inserting = false;
             Window.erasing = true;
