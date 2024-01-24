@@ -2,6 +2,7 @@
 #include<math.h>
 #include <windows.h>
 #include <iostream>
+#include <cstring>
 using namespace std;
 
 #include "./includes/fonts.cpp"
@@ -9,253 +10,247 @@ using namespace std;
 #include "./includes/node.cpp"
 
 
+//global variables
+class window_settings{
+    public:
+    float windowWidth=1280;
+    float windowHeight=720;
+    int rows;
+    int columns;
+    float cellWidth;
+    float cellHeight;
 
-UseFonts colus("colus.otf", "fonts/colus.otf");
-UseFonts roboto("roboto.otf", "fonts/roboto.ttf");
+    sf::Color background= sf::Color::Transparent;
+    sf::Color blockade = sf::Color::Black;
+    sf::Color solution = sf::Color::Blue; 
+    sf::Color iteration = sf::Color::Red;
+    sf::Color ends = sf::Color::Green;
+    sf::Color mouse = sf::Color::Yellow;
+    sf::Color outline = sf::Color::White;
 
 
+    string window_title="Path Finding Algorithm";
 
 
-//Sprite Objects "I have used cat object as a sample object".
-spriteManager cat("Cat","sprites/cat.png",10,100);
+    bool block_inserting = true;
+    bool normal = false;
+    bool erasing = true;
+    bool start= false;
+    bool end=false;
 
+
+    window_settings(int rows_n, int columns_n){
+        rows = rows_n;
+        columns = columns_n;
+        cellWidth = windowWidth / columns;
+        cellHeight = windowHeight / rows;
+    }
+
+};
+
+window_settings Window(36*2,64*2);
 
 class cell{
     public:
-    int x;
-    int y;
-};
-cell start_cell,end_cell;
+    int col_pos;
+    int row_pos;
+    int x_cod;
+    int y_cod;
 
+    bool isBlocked=false;
+    bool isEnd=false;
+    bool isStart=false;
+    bool isunderCursor=false;
+    bool isSoultion=false;
+    bool isTraversed=false;
 
+    sf::Color cellColor;
 
-//keep track of last added cell to avoid duplicate addition.
-static int lastcol=0;
-static int lastrow=0;
-
-//cells selected using black colour .. acts as bolckade in the path.
-static std::vector<sf::Vector2i> selectedCells;
-int total_rows;
-int total_cols;
-
-
-
-
-void displayGrid(sf::RenderWindow& window, int rows, int columns, bool colorToggle, bool & clear,bool & undo,bool & initials) {
-
-    //code to generate the grid.
-    total_cols=columns;
-    total_rows=rows;
-    float windowWidth = static_cast<float>(window.getSize().x);
-    float windowHeight = static_cast<float>(window.getSize().y);
-    float cellWidth = windowWidth / columns;
-    float cellHeight = windowHeight / rows;
-
-    sf::RectangleShape cell(sf::Vector2f(cellWidth, cellHeight));
-    cell.setFillColor(sf::Color::Transparent);
-    cell.setOutlineThickness(1.0f);
-    cell.setOutlineColor(sf::Color::White);
-
-    for (int row = 0; row < rows; ++row) {
-        for (int column = 0; column < columns; ++column) {
-            cell.setPosition(column * cellWidth, row * cellHeight);
-            window.draw(cell);
-        }
-    }
-
-
-
-
-
-// Code to color the cell green under the mouse cursor and black for cells selected with click and drag
-sf::Vector2i mousePos = sf::Mouse::getPosition(window);
-int rowUnderMouse = mousePos.y / static_cast<int>(cellHeight);
-int columnUnderMouse = mousePos.x / static_cast<int>(cellWidth);
-
-bool mouseHeld = sf::Mouse::isButtonPressed(sf::Mouse::Left);
-static bool dragging = false;
-
-
-//Variable to keep track of the start and end of the selected cells
-static int startx;
-static int starty;
-static int endx;
-static int endy; 
-static int tracker=0;
-
-
-start_cell.x=startx;
-start_cell.y=starty;
-end_cell.x=endx;
-end_cell.y=endy;
-
-
-
-// Variable to toggle cell selection coloring
-
-
-    if(clear==true){
-        cout<<"Screen Cleared"<<endl;
-        selectedCells.clear();
-        clear=false;
-    }
-    if(undo==true){
-        
-        if(selectedCells.size()>0){
-            selectedCells.pop_back();
-            cout<<"Undo"<<endl;
-        }
-     
-        undo=false;
-    }
-
-
-
-// Start dragging
-if (mouseHeld && !dragging && colorToggle ) {
-    dragging = true;
-}
-
-
-// While dragging, add cells to the selection
-if (dragging && mouseHeld && colorToggle) {
-   
-    
-    if (rowUnderMouse != lastrow || columnUnderMouse != lastcol) {
-        if(initials){
-            if(tracker==0){
-                startx=columnUnderMouse;
-                starty=rowUnderMouse;
-            }else{
-                endx=columnUnderMouse;
-                endy=rowUnderMouse;
-
-            }
-            
-            
-            tracker++;
-            if(tracker>=2){
-                initials=false;
-            }
-            
-            
+    cell(){
+        if(isBlocked){
+            cellColor = Window.blockade;
+        }else if(isEnd || isStart){
+            cellColor = Window.ends;
+        }else if(isunderCursor){
+            cellColor = Window.mouse;
+        }else if(isTraversed){
+            cellColor = Window.iteration;
+        }else if(isSoultion){
+            cellColor = Window.solution;
         }else{
-            selectedCells.push_back({columnUnderMouse, rowUnderMouse});
-
+            cellColor = Window.background;
         }
-        
-        lastcol=columnUnderMouse;
-        lastrow=rowUnderMouse;
-        
     }
 
-    
-    
-}
+    void update(){
+        if(isBlocked){
+            cellColor = Window.blockade;
+        }else if( isStart){
+            cellColor = sf::Color::Green;
+        }else if( isEnd){
+            cellColor = sf::Color::Magenta;
+        }else if(isunderCursor){
+            cellColor = Window.mouse;
+        }else if(isTraversed){
+            cellColor = Window.iteration;
+        }else if(isSoultion){
+            cellColor = Window.solution;
+        }else{
+            cellColor = Window.background;
+        }
 
-// Stop dragging
-if (!mouseHeld && dragging && colorToggle) {
-    dragging = false;
-}
 
+        if(Window.block_inserting){
+            Window.mouse=Window.blockade;
+        }else if(Window.start ){
+            Window.mouse=sf::Color::Green;
+        }else if( Window.end){
+            Window.mouse=sf::Color::Magenta;
+        }else if(Window.erasing){
+            Window.mouse=sf::Color::Yellow;
+        }
+    }
 
+};
 
+class Grid{
+    public:
+    int rows=Window.rows;
+    int columns=Window.columns;
+    int total_cells=Window.rows*Window.columns;
+    // Create a 2D vector with 3 rows and 12 columns, initialized to a default value (0 in this case)
+   
+    std::vector<std::vector<cell>> grid;
 
-
-
-
-
-// Draw cells
-for (int row = 0; row < rows; ++row) {
-    for (int column = 0; column < columns; ++column) {
-        // Check if the current cell is being dragged over
-        bool cellSelected = std::find(selectedCells.begin(), selectedCells.end(), sf::Vector2i(column, row)) != selectedCells.end();
-       
-       if(row == starty && column == startx){
-            cell.setFillColor(sf::Color::Yellow); }
-
-            else if(row == endy && column == endx){
-                cell.setFillColor(sf::Color::Red);
-
+    Grid() {
+        grid.resize(rows, std::vector<cell>(columns));
+        for (int i = 0; i < rows; ++i) {
+            for (int j = 0; j < columns; ++j) {
+                // Initialize each cell with appropriate row and column positions
+                grid[i][j].row_pos = i;
+                grid[i][j].col_pos = j;
             }
-       else{ if (row == rowUnderMouse && column == columnUnderMouse && colorToggle) {
-            cell.setFillColor(sf::Color::Blue); // Green color for cell under mouse
-        } else if (row == rowUnderMouse && column == columnUnderMouse && !colorToggle ) {
-            cell.setFillColor(sf::Color::Green); // Black color for selected cells if toggle is on
-        }else if (cellSelected ) {
-            cell.setFillColor(sf::Color::Black); // Black color for selected cells if toggle is on
-        } else {
-            cell.setFillColor(sf::Color::Transparent);
-        }}
-
-      
-
-        cell.setPosition(column * cellWidth, row * cellHeight);
-        window.draw(cell);
+        }
     }
-}
 
-
-}
-
-
-
-
-
-
-
-
-
-
-int main() {
-    sf::RenderWindow window;
-    window.create(sf::VideoMode(1280, 720), "SFML window", sf::Style::Titlebar | sf::Style::Close);
-   
-
-   
-    static bool colorToggle = true;
-    bool clear=false;
-    bool undo=false;
-    bool initials=true;
-
-
-    while (window.isOpen()) {
+    void update(sf::RenderWindow& window){
         sf::Event event;
-        // Update the position of the cat from left to right and vice versa
-        sf::Vector2u windowSize = window.getSize();
-        sf::Vector2f catPosition = cat.sprite.getPosition();
-        
-        while (window.pollEvent(event)) {
-            if (event.type == sf::Event::Closed)
-                window.close();
+        sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+        for(int i=0;i<rows;i++){
+            for(int j=0;j<columns;j++){
+                int rowUnderMouse = mousePos.y / static_cast<int>(Window.cellHeight);
+                int columnUnderMouse = mousePos.x / static_cast<int>(Window.cellWidth);
+                grid[i][j].isunderCursor=false;
+                if(i==rowUnderMouse && j==columnUnderMouse){
+                    
+                    grid[i][j].isunderCursor=true;
 
-             if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::T) {
-            colorToggle = !colorToggle; // Toggle the coloring feature
+                    if(sf::Mouse::isButtonPressed(sf::Mouse::Left) && Window.block_inserting==true){
+                        grid[i][j].isBlocked=true;
+                    }else if(sf::Mouse::isButtonPressed(sf::Mouse::Left) && Window.erasing==true){
+                        grid[i][j].isBlocked=false;
+                    }else if(sf::Mouse::isButtonPressed(sf::Mouse::Left) && Window.start==true){
+                        grid[i][j].isStart=true;
+                        Window.start=false;
+                    }else if(sf::Mouse::isButtonPressed(sf::Mouse::Left) && Window.end==true){
+                        grid[i][j].isEnd=true;
+                        Window.end=false;
+                    }
+                    
+
+
+                    
+                
+
+                }
+             
+                grid[i][j].update();
+
+                sf::RectangleShape cell(sf::Vector2f(Window.cellWidth, Window.cellHeight));
+                cell.setFillColor(grid[i][j].cellColor);
+                cell.setOutlineThickness(1.0f);
+                cell.setOutlineColor(sf::Color::White);
+                cell.setPosition(j * Window.cellWidth, i * Window.cellHeight);
+                window.draw(cell);
+                
             }
             
-            //Toogle screen clear
-            if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::C) {
-                clear=true;
-            }
-            if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::K) {
-                undo=true;
-            }
         }
 
-
-
     
-   
-
-        window.clear(sf::Color(240, 240, 240)); // Light grey background, close to white
-        displayGrid(window,36,64,colorToggle,clear,undo,initials);
-       /*  cat.displaySprite(window);  */
 
         
+    }
 
-  
+};
+
+Grid grid;
+
+void handle_events(sf::RenderWindow &window)
+{
+    sf::Event event;
+
+    while (window.pollEvent(event))
+    {
+
+        if (event.type == sf::Event::Closed)
+        {
+            window.close();
+        }
+
+        // T -> To erase the blocks
+        if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::T)
+        {
+            Window.block_inserting = false;
+            Window.erasing = true;
+            Window.end = false;
+            Window.start = false;
+        }
+
+        // B -> To insert the blocks
+        if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::B)
+        {
+            Window.block_inserting = true;
+            Window.erasing = false;
+            Window.end = false;
+            Window.start = false;
+        }
+
+        // S -> To insert start block
+        if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::S)
+        {
+            Window.block_inserting = false;
+            Window.erasing = false;
+            Window.start = true;
+            Window.end = false;
+        }
+        // E -> To insert end block
+        if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::E)
+        {
+            Window.block_inserting = false;
+            Window.erasing = false;
+            Window.start = false;
+            Window.end = true;
+        }
+    }
+}
+
+
+
+int main(){
+    sf::RenderWindow window;
+    window.create(sf::VideoMode(1280, 720), Window.window_title, sf::Style::Titlebar | sf::Style::Close);
+    
+      while (window.isOpen()) {
+
+        handle_events(window);         
+        window.clear(sf::Color(240, 240, 240));
+        grid.update(window);
+        
         window.display();
     }
 
-    return EXIT_SUCCESS;
+
+
+    return 0;
 }
