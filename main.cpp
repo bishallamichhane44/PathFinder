@@ -3,12 +3,13 @@
 #include <windows.h>
 #include <iostream>
 #include <cstring>
+#include <stack>
+#include <queue>
 using namespace std;
 
-#include "./includes/fonts.cpp"
-#include "./includes/spriteManager.cpp"
-#include "./includes/node.cpp"
 
+
+class cell;
 
 //global variables
 class window_settings{
@@ -29,10 +30,15 @@ class window_settings{
     sf::Color outline = sf::Color::White;
 
 
+    cell * endcell=nullptr;
+    cell * startcell=nullptr;
+
+
     string window_title="Path Finding Algorithm";
 
 
     bool block_inserting = true;
+    bool solve=false;
     bool normal = false;
     bool erasing = true;
     bool start= false;
@@ -52,8 +58,8 @@ window_settings Window(18,32);
 
 class cell{
     public:
-    int col_pos;
-    int row_pos;
+    int col_pos;   //j
+    int row_pos;   //i
     int x_cod;
     int y_cod;
 
@@ -65,6 +71,27 @@ class cell{
     bool isTraversed=false;
 
     sf::Color cellColor;
+
+
+    cell * parent = nullptr;
+    float gCost;
+    float hCost;
+    float fcost;
+
+    
+    float h_value(){
+        cell end = *Window.endcell;
+        float dx = abs(col_pos - end.col_pos);
+        float dy = abs(row_pos - end.row_pos);
+        hCost=(dx+dy);
+        return hCost;
+    }
+
+
+    void calculate_cost(){
+        h_value();
+        fcost=gCost+hCost;
+    }
 
     cell(){
         if(isBlocked){
@@ -80,6 +107,13 @@ class cell{
         }else{
             cellColor = Window.background;
         }
+    }
+
+
+
+     bool operator==(const cell& other) const {
+        // Define your equality logic based on the class properties
+        return ((x_cod == other.x_cod)&&(y_cod == other.y_cod));
     }
 
     void update(){
@@ -109,6 +143,12 @@ class cell{
         }else if(Window.erasing){
             Window.mouse=sf::Color::Yellow;
         }
+    }
+
+
+      bool operator<(const cell& other) const {
+        // Priority queue should be in ascending order based on fcost
+        return fcost > other.fcost;
     }
 
 };
@@ -205,6 +245,15 @@ void handle_events(sf::RenderWindow &window)
             Window.start = false;
         }
 
+         if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Q )
+        {
+            Window.block_inserting = false;
+            Window.erasing = false;
+            Window.solve = true;
+            Window.end = false;
+            Window.start = false;
+        }
+
         // B -> To insert the blocks
         if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::B)
         {
@@ -235,6 +284,103 @@ void handle_events(sf::RenderWindow &window)
 
 
 
+void tracepath(){
+    int row = Window.endcell->row_pos;
+    int col = Window.endcell->col_pos;
+
+    while(!((grid.grid[row][col].parent->row_pos == row && grid.grid[row][col].parent->col_pos == col))){
+        grid.grid[row][col].isSoultion=true;
+        int temp_row = grid.grid[row][col].parent->row_pos;
+        int temp_col = grid.grid[row][col].parent->col_pos;
+        row=temp_row;
+        col=temp_col;
+    }
+
+}
+
+bool checktarget(cell current){
+    if(current.row_pos==Window.endcell->row_pos && current.col_pos==Window.endcell->col_pos){
+        return true;
+    }
+    return false;
+}
+
+
+bool isCellInPriorityQueue(const std::priority_queue<cell> pq, const cell& target) {
+    std::priority_queue<cell> temp = pq;  // Copy the original priority queue
+
+    // Iterate through the copy to find the target
+    while (!temp.empty()) {
+        if (temp.top() == target) {
+            return true;  // Found the target
+        }
+        temp.pop();
+    }
+
+    return false;  // Target not found
+}
+
+
+void Astar(){
+    cell start = *Window.startcell;
+    cell end = *Window.endcell;
+
+   
+
+    std::priority_queue<cell> openList;
+    std::priority_queue<cell> closedList;
+
+    start.fcost=0;
+    openList.push(start);
+    while(!openList.empty()){
+        cell current = openList.top();
+        openList.pop();
+        closedList.push(current);
+
+        if(checktarget(current)){
+            tracepath();
+            return;
+        }
+
+        for(int i=-1;i<=1;i++){
+            for(int j=-1;j<=1;j++){
+                
+                if(i==0 && j==0){
+                    
+                    continue;
+                }
+                if(current.row_pos+i>=0 && current.row_pos+i<Window.rows && current.col_pos+j>=0 && current.col_pos+j<Window.columns){
+
+                    cell neighbour = grid.grid[current.row_pos+i][current.col_pos+j];
+                    if((neighbour.isBlocked || neighbour.isEnd) || isCellInPriorityQueue(closedList, neighbour)){
+                        continue;
+                    }
+
+                    if(( current.gCost + 1 < neighbour.gCost) || !isCellInPriorityQueue(openList, neighbour)){ 
+                        neighbour.gCost = current.gCost+1;
+                        neighbour.calculate_cost();
+                        neighbour.parent = &current;
+
+                        
+                        if(!isCellInPriorityQueue(openList, neighbour)){
+                            openList.push(neighbour);
+                        }
+                    }
+
+                    
+
+                }
+            }
+        }
+
+
+    }
+}
+
+
+
+
+
 int main(){
     sf::RenderWindow window;
     window.create(sf::VideoMode(1280, 720), Window.window_title, sf::Style::Titlebar | sf::Style::Close);
@@ -243,6 +389,11 @@ int main(){
 
         handle_events(window);         
         window.clear(sf::Color(240, 240, 240));
+        
+        if(Window.solve==true){
+            Astar(); 
+            Window.solve=false;
+        }
         grid.update(window);
         
         window.display();
