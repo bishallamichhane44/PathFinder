@@ -7,6 +7,8 @@
 #include <queue>
 using namespace std;
 
+#include "./includes/fonts.cpp"
+UseFonts colus("colus.otf", "fonts/colus.otf");
 
 
 class cell;
@@ -69,14 +71,15 @@ class cell{
     bool isunderCursor=false;
     bool isSoultion=false;
     bool isTraversed=false;
+    bool isNeighbour=false;
 
     sf::Color cellColor;
 
 
     cell * parent = nullptr;
-    float gCost;
-    float hCost;
-    float fcost;
+    float gCost=0;
+    float hCost=0;
+    float fcost=0;
 
     
     float h_value(){
@@ -93,7 +96,15 @@ class cell{
         fcost=gCost+hCost;
     }
 
-    cell(){
+    void display_cost(){
+        cout<<"H: "<<hCost<<" G: "<<gCost<<" F: "<<fcost<<endl;
+    }
+
+    cell(int a=12, int b=5){
+
+        col_pos = a;
+        row_pos = b;
+
         if(isBlocked){
             cellColor = Window.blockade;
         }else if(isEnd || isStart){
@@ -123,12 +134,14 @@ class cell{
             cellColor = sf::Color::Green;
         }else if( isEnd){
             cellColor = sf::Color::Magenta;
+        }else if(isSoultion){
+            cellColor = sf::Color::Magenta;
         }else if(isunderCursor){
             cellColor = Window.mouse;
         }else if(isTraversed){
             cellColor = Window.iteration;
-        }else if(isSoultion){
-            cellColor = Window.solution;
+        }else if(isNeighbour){
+            cellColor = sf::Color::Blue;
         }else{
             cellColor = Window.background;
         }
@@ -194,9 +207,11 @@ class Grid{
                         grid[i][j].isBlocked=false;
                     }else if(sf::Mouse::isButtonPressed(sf::Mouse::Left) && Window.start==true){
                         grid[i][j].isStart=true;
+                        Window.startcell=&grid[i][j];
                         Window.start=false;
                     }else if(sf::Mouse::isButtonPressed(sf::Mouse::Left) && Window.end==true){
                         grid[i][j].isEnd=true;
+                        Window.endcell=&grid[i][j];
                         Window.end=false;
                     }
 
@@ -287,8 +302,10 @@ void handle_events(sf::RenderWindow &window)
 void tracepath(){
     int row = Window.endcell->row_pos;
     int col = Window.endcell->col_pos;
-
+    
+        cout<<"outside_while"<<endl;
     while(!((grid.grid[row][col].parent->row_pos == row && grid.grid[row][col].parent->col_pos == col))){
+        cout<<"inside_while"<<endl;
         grid.grid[row][col].isSoultion=true;
         int temp_row = grid.grid[row][col].parent->row_pos;
         int temp_col = grid.grid[row][col].parent->col_pos;
@@ -296,22 +313,26 @@ void tracepath(){
         col=temp_col;
     }
 
+     cout<<"completed_while"<<endl;
+
 }
 
 bool checktarget(cell current){
+   
+   
     if(current.row_pos==Window.endcell->row_pos && current.col_pos==Window.endcell->col_pos){
+        cout<<"hw_end"<<endl;
         return true;
     }
     return false;
 }
 
 
-bool isCellInPriorityQueue(const std::priority_queue<cell> pq, const cell& target) {
-    std::priority_queue<cell> temp = pq;  // Copy the original priority queue
-
+bool isCellInPriorityQueue(const std::priority_queue<cell>&pq, const cell& target) {
+    std::priority_queue<cell> temp = pq;  
     // Iterate through the copy to find the target
     while (!temp.empty()) {
-        if (temp.top() == target) {
+        if (temp.top().col_pos == target.col_pos && temp.top().row_pos == target.row_pos) {
             return true;  // Found the target
         }
         temp.pop();
@@ -331,40 +352,79 @@ void Astar(){
     std::priority_queue<cell> closedList;
 
     start.fcost=0;
+    start.parent=&start;
     openList.push(start);
+
+
+    cout<<"Start Test"<<endl;
+
+;
     while(!openList.empty()){
+        static int i=1150;
         cell current = openList.top();
+        cout<<endl<<endl;
+        cout<<"current selected: "<<current.row_pos<<" "<<current.col_pos<<" | All nighbours "<<endl;
+
         openList.pop();
         closedList.push(current);
 
-        if(checktarget(current)){
+        if(current.isEnd==true){
+            cout<<"traching_target"<<endl;
             tracepath();
+            cout<<"found_end"<<endl;
             return;
         }
+        if(i<=0){
+            break;
+        }
+        i--;
+
+      
+    
+       
 
         for(int i=-1;i<=1;i++){
             for(int j=-1;j<=1;j++){
+                 
                 
-                if(i==0 && j==0){
-                    
+                if((i+j==0)||(abs(i+j)>=2)){
                     continue;
                 }
+
                 if(current.row_pos+i>=0 && current.row_pos+i<Window.rows && current.col_pos+j>=0 && current.col_pos+j<Window.columns){
 
-                    cell neighbour = grid.grid[current.row_pos+i][current.col_pos+j];
-                    if((neighbour.isBlocked || neighbour.isEnd) || isCellInPriorityQueue(closedList, neighbour)){
+
+                    cell * neighbour = &grid.grid[current.row_pos+i][current.col_pos+j];
+                    
+                    cout<<endl<<"neighbour:"<<neighbour->row_pos<<" "<<neighbour->col_pos<<"  ";
+                    
+                    if((neighbour->isBlocked ) ){
+                        neighbour->isNeighbour=true;
+                       
+                        cout<<"  is_blocked: "<<neighbour->isBlocked;
+                        cout<<"  is_end: "<<neighbour->isEnd;
+                        cout<<"  neighbour blocked / skipped: "<<neighbour->row_pos<<" "<<neighbour->col_pos;
+
                         continue;
                     }
 
-                    if(( current.gCost + 1 < neighbour.gCost) || !isCellInPriorityQueue(openList, neighbour)){ 
-                        neighbour.gCost = current.gCost+1;
-                        neighbour.calculate_cost();
-                        neighbour.parent = &current;
+                    cout<<" cost: ";
+                    cout<<"case: "<<( current.gCost + 1 <= neighbour->gCost)<<" "<<!isCellInPriorityQueue(openList, *neighbour);
+
+
+                    if(( current.gCost + 1 <= neighbour->gCost) || !isCellInPriorityQueue(openList, *neighbour)){ 
+                       
+                        neighbour->gCost = current.gCost+1;
+                        neighbour->calculate_cost();
+                        neighbour->display_cost();
+                        neighbour->parent = &current;
 
                         
-                        if(!isCellInPriorityQueue(openList, neighbour)){
-                            openList.push(neighbour);
+                        if(!isCellInPriorityQueue(openList, *neighbour)){
+                            openList.push(*neighbour);
+                            neighbour->isTraversed=true;
                         }
+
                     }
 
                     
@@ -386,12 +446,30 @@ int main(){
     window.create(sf::VideoMode(1280, 720), Window.window_title, sf::Style::Titlebar | sf::Style::Close);
     
       while (window.isOpen()) {
+        sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+
+        // Create a text object
+        sf::Text text, text2;
+        text.setString(std::to_string(mousePos.y / static_cast<int>(Window.cellHeight)));
+        text2.setString(std::to_string(mousePos.x / static_cast<int>(Window.cellWidth)));
+        text.setFont(colus.font);
+        text2.setFont(colus.font);
+        text.setCharacterSize(24);
+        text2.setCharacterSize(24); // in pixels, not points!
+        text.setFillColor(sf::Color::Magenta);
+        text2.setFillColor(sf::Color::Magenta);
+        text.setPosition(50, 50);
+        text2.setPosition(50, 100);
+    
 
         handle_events(window);         
         window.clear(sf::Color(240, 240, 240));
+        window.draw(text);
+        window.draw(text2);
         
         if(Window.solve==true){
             Astar(); 
+            cout<<"here"<<endl;
             Window.solve=false;
         }
         grid.update(window);
