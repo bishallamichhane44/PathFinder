@@ -56,10 +56,6 @@ public:
 
     void createCell(float cellWidth, float cellHeight, int posX, int posY, int rn, int cn)
     {
-        // cell = new sf::RectangleShape(sf::Vector2f(cellWidth, cellHeight));
-        // isSource = false;
-        // isDestination = false;
-        // isBlocked = false;
         distanceFromSource = INF;
         distanceFromDest = INF;
         rowNo = rn;
@@ -67,11 +63,11 @@ public:
         cell->setPosition(posX, posY);
         if (isVisited)
         {
-            cell->setFillColor(sf::Color::Transparent);
+            cell->setFillColor(sf::Color::White);
             isVisited = false;
         }
         cell->setOutlineThickness(1.0f);
-        cell->setOutlineColor(sf::Color::White);
+        cell->setOutlineColor(sf::Color::Black);
         parent = this;
 
         for (int i = -1; i <= 1; i++)
@@ -120,16 +116,35 @@ public:
     int cols;
     int tracker = 0;
 
-    void initializeGrid(int row, int col)
+    void initializeGrid(int row, int col, sf::RenderWindow &window)
     {
         rows = row;
         cols = col;
-        // tracker = 0;
-        for (int i = 0; i < row; i++)
+
+        for (int i = 0; i < rows; i++)
         {
-            for (int j = 0; j < col; j++)
+            for (int j = 0; j < cols; j++)
             {
+
+                if (cells[i][j].isVisited)
+                {
+                    cells[i][j].cell->setFillColor(sf::Color::White);
+                    cells[i][j].isVisited = false;
+                }
                 cells[i][j].createCell(cellWidth, cellHeight, j * cellWidth, i * cellHeight, i, j);
+                cells[i][j].DrawCell(window);
+            }
+        }
+        window.display();
+    }
+
+    void drawGrid(sf::RenderWindow &window)
+    {
+        for (int i = 0; i < rows; i++)
+        {
+            for (int j = 0; j < cols; j++)
+            {
+                cells[i][j].DrawCell(window);
             }
         }
     }
@@ -140,9 +155,10 @@ public:
         return (value);
     }
 
-    void restartForAlgo()
+    void restartForAlgo(sf::RenderWindow &window)
     {
-        initializeGrid(rows, cols);
+        initializeGrid(rows, cols, window);
+
         cells[sourceCell->rowNo][sourceCell->colNo].isSource = true;
         cells[sourceCell->rowNo][sourceCell->colNo].cell->setFillColor(sf::Color::Green);
         cells[sourceCell->rowNo][sourceCell->colNo].distanceFromSource = 0;
@@ -150,7 +166,6 @@ public:
 
         cells[destCell->rowNo][destCell->colNo].isDestination = true;
         cells[destCell->rowNo][destCell->colNo].cell->setFillColor(sf::Color::Red);
-        // cells[destCell->rowNo][sourceCell->colNo].distanceFromSource=INF;
         cells[destCell->rowNo][destCell->colNo].distanceFromDest = 0;
     }
 
@@ -163,7 +178,7 @@ public:
         {
             for (int j = 0; j < cols; j++)
             {
-                cells[i][j].cell->setFillColor(sf::Color::Transparent);
+                cells[i][j].cell->setFillColor(sf::Color::White);
                 cells[i][j].isSource = false;
                 cells[i][j].isDestination = false;
                 cells[i][j].isBlocked = false;
@@ -190,7 +205,7 @@ public:
             {
                 if (!cells[i][j].isSource && !cells[i][j].isDestination && !cells[i][j].isBlocked && !cells[i][j].isVisited)
                 {
-                    cells[i][j].cell->setFillColor(sf::Color::Transparent);
+                    cells[i][j].cell->setFillColor(sf::Color::White);
                 }
                 cells[i][j].DrawCell(window);
             }
@@ -242,19 +257,13 @@ public:
             // For removing Blockage
             else if (sf::Keyboard::isKeyPressed(sf::Keyboard::R) && cells[rowUnderMouse][columnUnderMouse].isBlocked)
             {
-                cells[rowUnderMouse][columnUnderMouse].cell->setFillColor(sf::Color::Transparent);
+                cells[rowUnderMouse][columnUnderMouse].cell->setFillColor(sf::Color::White);
                 cells[rowUnderMouse][columnUnderMouse].isBlocked = false;
             }
         }
 
         // Draw Grid after various events
-        for (int i = 0; i < rows; i++)
-        {
-            for (int j = 0; j < cols; j++)
-            {
-                cells[i][j].DrawCell(window);
-            }
-        }
+        drawGrid(window);
     }
 
     Cell *getNearestNodeForAStar()
@@ -304,7 +313,7 @@ public:
 
     void dijkastra(sf::RenderWindow &window)
     {
-        restartForAlgo();
+        restartForAlgo(window);
         for (int i = 0; i < rows; i++)
         {
             for (int j = 0; j < cols; j++)
@@ -312,6 +321,11 @@ public:
                 Cell *nearest = getNearestNodeForDijkastra();
                 nearest->isVisited = true;
                 nearest->cell->setFillColor(sf::Color::Magenta);
+
+                drawGrid(window);
+                window.display();
+                sf::sleep(sf::seconds(0.1f));
+
                 if (nearest->isSource)
                 {
                     nearest->cell->setFillColor(sf::Color::Green);
@@ -320,7 +334,6 @@ public:
                 {
                     nearest->cell->setFillColor(sf::Color::Red);
                     displayFinal(nearest);
-                    sf::sleep(sf::seconds(1.0f));
                     return;
                 }
 
@@ -343,7 +356,7 @@ public:
 
     void aStar(sf::RenderWindow &window)
     {
-        restartForAlgo();
+        restartForAlgo(window);
         for (int i = 0; i < rows; i++)
         {
             for (int j = 0; j < cols; j++)
@@ -351,6 +364,9 @@ public:
                 Cell *nearest = getNearestNodeForAStar();
                 nearest->isVisited = true;
                 nearest->cell->setFillColor(sf::Color::Magenta);
+                drawGrid(window);
+                window.display();
+                sf::sleep(sf::seconds(0.1f));
                 if (nearest->isSource)
                 {
                     nearest->cell->setFillColor(sf::Color::Green);
@@ -359,7 +375,6 @@ public:
                 {
                     nearest->cell->setFillColor(sf::Color::Red);
                     displayFinal(nearest);
-                    sf::sleep(sf::seconds(1.0f));
                     return;
                 }
 
@@ -388,7 +403,7 @@ int main()
     window.create(sf::VideoMode(windowWidth, windowHeight), "SFML window", sf::Style::Titlebar | sf::Style::Close);
 
     Grid g1;
-    g1.initializeGrid(rows, cols);
+    g1.initializeGrid(rows, cols, window);
 
     while (window.isOpen())
     {
