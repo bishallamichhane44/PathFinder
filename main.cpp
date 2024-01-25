@@ -3,7 +3,7 @@
 
 #include <windows.h>
 #include <iostream>
-#include <stdio.h>
+#include <cmath>
 using namespace std;
 
 // Font manager class
@@ -25,7 +25,7 @@ public:
 UseFonts colus("colus.otf", "fonts/colus.otf");
 UseFonts roboto("roboto.otf", "fonts/roboto.ttf");
 
-const int INFINITY = 10000;
+const int INF = 10000;
 int rows = 20;
 int cols = 20;
 int totalNodes = rows * cols;
@@ -45,7 +45,7 @@ public:
     bool isDestination;
     bool isBlocked;
     bool isVisited;
-    int distanceFromSource;
+    int distanceFromSource, distanceFromDest;
     int rowNo, colNo;
     Cell *parent;
     Cost adj[3][3];
@@ -57,7 +57,8 @@ public:
         isDestination = false;
         isBlocked = false;
         isVisited = false;
-        distanceFromSource = INFINITY;
+        distanceFromSource = INF;
+        distanceFromDest = INF;
         rowNo = rn;
         colNo = cn;
         cell->setPosition(posX, posY);
@@ -91,7 +92,7 @@ public:
                 }
                 else
                 {
-                    adj[i + 1][j + 1].cost = INFINITY;
+                    adj[i + 1][j + 1].cost = INF;
                 }
             }
         }
@@ -106,6 +107,8 @@ class Grid
 {
 public:
     Cell cells[70][70];
+    Cell *sourceCell;
+    Cell *destCell;
     int rows;
     int cols;
     float cellWidth, cellHeight;
@@ -118,6 +121,8 @@ public:
         cellWidth = cellW;
         cellHeight = cellH;
         tracker = 0;
+        sourceCell = nullptr;
+        destCell = nullptr;
         for (int i = 0; i < row; i++)
         {
             for (int j = 0; j < col; j++)
@@ -127,24 +132,39 @@ public:
         }
     }
 
+    int calcDistanceFromDestination(int r, int c)
+    {
+        int value = sqrt(pow(destCell->rowNo - r, 2) + pow(destCell->colNo - c, 2)) * 10;
+        return (value);
+    }
+
+    void clearAll()
+    {
+        tracker = 0;
+        sourceCell = nullptr;
+        destCell = nullptr;
+        for (int i = 0; i < rows; i++)
+        {
+            for (int j = 0; j < cols; j++)
+            {
+                cells[i][j].cell->setFillColor(sf::Color::Transparent);
+                cells[i][j].isSource = false;
+                cells[i][j].isDestination = false;
+                cells[i][j].isBlocked = false;
+                cells[i][j].isVisited = false;
+                cells[i][j].distanceFromSource = INF;
+                cells[i][j].distanceFromDest = INF;
+                cells[i][j].parent = &cells[i][j];
+            }
+        }
+    }
+
     void displayGrid(sf::RenderWindow &window)
     {
         // For resetting the app
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::C))
         {
-            tracker = 0;
-            for (int i = 0; i < rows; i++)
-            {
-                for (int j = 0; j < cols; j++)
-                {
-                    cells[i][j].cell->setFillColor(sf::Color::Transparent);
-                    cells[i][j].isSource = false;
-                    cells[i][j].isDestination = false;
-                    cells[i][j].isBlocked = false;
-                    cells[i][j].isVisited = false;
-                    cells[i][j].distanceFromSource = INFINITY;
-                }
-            }
+            clearAll();
         }
 
         // Drawing the Grid
@@ -181,6 +201,7 @@ public:
                 cells[rowUnderMouse][columnUnderMouse].cell->setFillColor(sf::Color::Green);
                 cells[rowUnderMouse][columnUnderMouse].isSource = true;
                 cells[rowUnderMouse][columnUnderMouse].distanceFromSource = 0;
+                sourceCell = &cells[rowUnderMouse][columnUnderMouse];
                 tracker++;
             }
 
@@ -189,6 +210,9 @@ public:
             {
                 cells[rowUnderMouse][columnUnderMouse].cell->setFillColor(sf::Color::Red);
                 cells[rowUnderMouse][columnUnderMouse].isDestination = true;
+                cells[rowUnderMouse][columnUnderMouse].distanceFromDest = 0;
+                destCell = &cells[rowUnderMouse][columnUnderMouse];
+                sourceCell->distanceFromDest = calcDistanceFromDestination(sourceCell->rowNo, sourceCell->colNo);
                 tracker++;
             }
 
@@ -200,7 +224,7 @@ public:
             }
 
             // For removing Blockage
-            else if (sf::Keyboard::isKeyPressed(sf::Keyboard::D) && cells[rowUnderMouse][columnUnderMouse].isBlocked)
+            else if (sf::Keyboard::isKeyPressed(sf::Keyboard::R) && cells[rowUnderMouse][columnUnderMouse].isBlocked)
             {
                 cells[rowUnderMouse][columnUnderMouse].cell->setFillColor(sf::Color::Transparent);
                 cells[rowUnderMouse][columnUnderMouse].isBlocked = false;
@@ -216,9 +240,28 @@ public:
             }
         }
     }
-    Cell *getNearestNode()
+
+    Cell *getNearestNodeForAStar()
     {
-        int minValue = INFINITY;
+        int minValue = INF;
+        Cell *minNode = nullptr;
+        for (int i = 0; i < rows; i++)
+        {
+            for (int j = 0; j < cols; j++)
+            {
+                if (!cells[i][j].isVisited && (cells[i][j].distanceFromSource + cells[i][j].distanceFromDest) < minValue && !cells[i][j].isBlocked)
+                {
+                    minNode = &cells[i][j];
+                    minValue = cells[i][j].distanceFromSource + cells[i][j].distanceFromDest;
+                }
+            }
+        }
+        return minNode;
+    }
+
+    Cell *getNearestNodeForDijkastra()
+    {
+        int minValue = INF;
         Cell *minNode = nullptr;
         for (int i = 0; i < rows; i++)
         {
@@ -249,7 +292,7 @@ public:
         {
             for (int j = 0; j < cols; j++)
             {
-                Cell *nearest = getNearestNode();
+                Cell *nearest = getNearestNodeForDijkastra();
                 nearest->isVisited = true;
                 visitCount++;
                 nearest->cell->setFillColor(sf::Color::Magenta);
@@ -271,9 +314,49 @@ public:
                     {
 
                         Cell &c1 = cells[nearest->adj[k][l].rowNo][nearest->adj[k][l].colNo];
-                        if (nearest->adj[k][l].cost != INFINITY && (c1.distanceFromSource > (nearest->distanceFromSource + nearest->adj[k][l].cost)))
+                        if (nearest->adj[k][l].cost != INF && (c1.distanceFromSource > (nearest->distanceFromSource + nearest->adj[k][l].cost)))
                         {
                             c1.distanceFromSource = nearest->distanceFromSource + nearest->adj[k][l].cost;
+                            c1.parent = nearest;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    void aStar(sf::RenderWindow &window)
+    {
+        for (int i = 0; i < rows; i++)
+        {
+            for (int j = 0; j < cols; j++)
+            {
+                Cell *nearest = getNearestNodeForAStar();
+                nearest->isVisited = true;
+                visitCount++;
+                nearest->cell->setFillColor(sf::Color::Magenta);
+                if (nearest->isSource)
+                {
+                    nearest->cell->setFillColor(sf::Color::Green);
+                }
+                if (nearest->isDestination)
+                {
+                    nearest->cell->setFillColor(sf::Color::Red);
+                    displayFinal(nearest);
+                    sf::sleep(sf::seconds(1.0f));
+                    return;
+                }
+
+                for (int k = 0; k < 3; k++)
+                {
+                    for (int l = 0; l < 3; l++)
+                    {
+
+                        Cell &c1 = cells[nearest->adj[k][l].rowNo][nearest->adj[k][l].colNo];
+                        if (nearest->adj[k][l].cost != INF && (c1.distanceFromSource > (nearest->distanceFromSource + nearest->adj[k][l].cost)))
+                        {
+                            c1.distanceFromSource = nearest->distanceFromSource + nearest->adj[k][l].cost;
+                            c1.distanceFromDest = calcDistanceFromDestination(nearest->adj[k][l].rowNo, nearest->adj[k][l].colNo);
                             c1.parent = nearest;
                         }
                     }
@@ -306,9 +389,13 @@ int main()
                 window.close();
         }
 
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::G))
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
         {
             g1.dijkastra(window);
+        }
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
+        {
+            g1.aStar(window);
         }
 
         window.clear(sf::Color(240, 240, 240)); // Light grey background, close to white
