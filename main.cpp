@@ -6,6 +6,16 @@
 #include <cmath>
 using namespace std;
 
+const int INF = 10000;
+int rows = 36;
+int cols = 64;
+
+const float windowWidth = 1280;
+const float windowHeight = 720;
+
+const float cellWidth = windowWidth / cols;
+const float cellHeight = windowHeight / rows;
+
 // Font manager class
 class UseFonts
 {
@@ -25,12 +35,6 @@ public:
 UseFonts colus("colus.otf", "fonts/colus.otf");
 UseFonts roboto("roboto.otf", "fonts/roboto.ttf");
 
-const int INF = 10000;
-int rows = 20;
-int cols = 20;
-int totalNodes = rows * cols;
-int visitCount = 0;
-
 class Cost
 {
 public:
@@ -40,29 +44,32 @@ public:
 class Cell
 {
 public:
-    sf::RectangleShape *cell;
-    bool isSource;
-    bool isDestination;
-    bool isBlocked;
-    bool isVisited;
-    int distanceFromSource, distanceFromDest;
+    sf::RectangleShape *cell = new sf::RectangleShape(sf::Vector2f(cellWidth, cellHeight));
+    bool isSource = false;
+    bool isDestination = false;
+    bool isBlocked = false;
+    bool isVisited = false;
+    int distanceFromSource = INF, distanceFromDest = INF;
     int rowNo, colNo;
     Cell *parent;
     Cost adj[3][3];
 
     void createCell(float cellWidth, float cellHeight, int posX, int posY, int rn, int cn)
     {
-        cell = new sf::RectangleShape(sf::Vector2f(cellWidth, cellHeight));
-        isSource = false;
-        isDestination = false;
-        isBlocked = false;
-        isVisited = false;
+        // cell = new sf::RectangleShape(sf::Vector2f(cellWidth, cellHeight));
+        // isSource = false;
+        // isDestination = false;
+        // isBlocked = false;
         distanceFromSource = INF;
         distanceFromDest = INF;
         rowNo = rn;
         colNo = cn;
         cell->setPosition(posX, posY);
-        cell->setFillColor(sf::Color::Transparent);
+        if (isVisited)
+        {
+            cell->setFillColor(sf::Color::Transparent);
+            isVisited = false;
+        }
         cell->setOutlineThickness(1.0f);
         cell->setOutlineColor(sf::Color::White);
         parent = this;
@@ -107,22 +114,17 @@ class Grid
 {
 public:
     Cell cells[70][70];
-    Cell *sourceCell;
-    Cell *destCell;
+    Cell *sourceCell = nullptr;
+    Cell *destCell = nullptr;
     int rows;
     int cols;
-    float cellWidth, cellHeight;
-    int tracker;
+    int tracker = 0;
 
-    void createGrid(int row, int col, float cellW, float cellH)
+    void initializeGrid(int row, int col)
     {
         rows = row;
         cols = col;
-        cellWidth = cellW;
-        cellHeight = cellH;
-        tracker = 0;
-        sourceCell = nullptr;
-        destCell = nullptr;
+        // tracker = 0;
         for (int i = 0; i < row; i++)
         {
             for (int j = 0; j < col; j++)
@@ -136,6 +138,20 @@ public:
     {
         int value = sqrt(pow(destCell->rowNo - r, 2) + pow(destCell->colNo - c, 2)) * 10;
         return (value);
+    }
+
+    void restartForAlgo()
+    {
+        initializeGrid(rows, cols);
+        cells[sourceCell->rowNo][sourceCell->colNo].isSource = true;
+        cells[sourceCell->rowNo][sourceCell->colNo].cell->setFillColor(sf::Color::Green);
+        cells[sourceCell->rowNo][sourceCell->colNo].distanceFromSource = 0;
+        cells[sourceCell->rowNo][sourceCell->colNo].distanceFromDest = calcDistanceFromDestination(sourceCell->rowNo, sourceCell->colNo);
+
+        cells[destCell->rowNo][destCell->colNo].isDestination = true;
+        cells[destCell->rowNo][destCell->colNo].cell->setFillColor(sf::Color::Red);
+        // cells[destCell->rowNo][sourceCell->colNo].distanceFromSource=INF;
+        cells[destCell->rowNo][destCell->colNo].distanceFromDest = 0;
     }
 
     void clearAll()
@@ -288,13 +304,13 @@ public:
 
     void dijkastra(sf::RenderWindow &window)
     {
+        restartForAlgo();
         for (int i = 0; i < rows; i++)
         {
             for (int j = 0; j < cols; j++)
             {
                 Cell *nearest = getNearestNodeForDijkastra();
                 nearest->isVisited = true;
-                visitCount++;
                 nearest->cell->setFillColor(sf::Color::Magenta);
                 if (nearest->isSource)
                 {
@@ -327,13 +343,13 @@ public:
 
     void aStar(sf::RenderWindow &window)
     {
+        restartForAlgo();
         for (int i = 0; i < rows; i++)
         {
             for (int j = 0; j < cols; j++)
             {
                 Cell *nearest = getNearestNodeForAStar();
                 nearest->isVisited = true;
-                visitCount++;
                 nearest->cell->setFillColor(sf::Color::Magenta);
                 if (nearest->isSource)
                 {
@@ -368,16 +384,11 @@ public:
 
 int main()
 {
-    float windowWidth = 600;
-    float windowHeight = 600;
     sf::RenderWindow window;
     window.create(sf::VideoMode(windowWidth, windowHeight), "SFML window", sf::Style::Titlebar | sf::Style::Close);
 
-    float cellWidth = windowWidth / rows;
-    float cellHeight = windowHeight / cols;
-
     Grid g1;
-    g1.createGrid(rows, cols, cellWidth, cellHeight);
+    g1.initializeGrid(rows, cols);
 
     while (window.isOpen())
     {

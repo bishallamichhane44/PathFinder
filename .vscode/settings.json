@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "iostream": "cpp",
-        "source_location": "cpp"
+        "source_location": "cpp",
+        "new": "cpp"
     }
 }
