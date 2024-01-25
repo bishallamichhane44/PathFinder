@@ -1,6 +1,9 @@
 #include <SFML/Graphics.hpp>
+#include <SFML/System.hpp>
+
 #include <windows.h>
 #include <iostream>
+#include <stdio.h>
 using namespace std;
 
 // Font manager class
@@ -22,60 +25,17 @@ public:
 UseFonts colus("colus.otf", "fonts/colus.otf");
 UseFonts roboto("roboto.otf", "fonts/roboto.ttf");
 
-bool startAlgo = false;
-
-class spriteManager
-{
-private:
-    int posX;
-    int posY;
-
-public:
-    sf::Sprite sprite;
-    sf::Texture texture;
-
-    spriteManager(const std::string &spriteName, const std::string &textureFileLocation, int posx = 0, int posy = 0)
-    {
-        // This function will create a sprite with the name passed as the parameter and add the texture given as parameter.
-        // posx,posy refers to the position of the sprite in the window.
-        posX = posx;
-        posY = posy;
-
-        if (!texture.loadFromFile(textureFileLocation))
-        {
-            throw std::runtime_error("Failed to load texture: " + spriteName);
-        }
-        sprite.setTexture(texture);
-        sprite.setPosition(posX, posY);
-    }
-
-    void updatePos(int posx, int posy)
-    {
-        // Code to update the position of the sprite.
-        posX = posx;
-        posY = posy;
-        sprite.setPosition(posX, posY);
-    }
-
-    void updateTexture(const std::string &textureFileLocation)
-    {
-        // This code will update the texture of the sprite.
-        if (!texture.loadFromFile(textureFileLocation))
-        {
-            throw std::runtime_error("Failed to load texture: " + textureFileLocation);
-        }
-        sprite.setTexture(texture);
-    }
-
-    void displaySprite(sf::RenderWindow &window)
-    {
-        // code to draw the sprite on the window passed as the parameter.
-        window.draw(sprite);
-    }
-};
-
 const int INFINITY = 10000;
-int costMatrix[10][10][10][10];
+int rows = 20;
+int cols = 20;
+int totalNodes = rows * cols;
+int visitCount = 0;
+
+class Cost
+{
+public:
+    int rowNo, colNo, cost;
+};
 
 class Cell
 {
@@ -88,6 +48,7 @@ public:
     int distanceFromSource;
     int rowNo, colNo;
     Cell *parent;
+    Cost adj[3][3];
 
     void createCell(float cellWidth, float cellHeight, int posX, int posY, int rn, int cn)
     {
@@ -104,6 +65,36 @@ public:
         cell->setOutlineThickness(1.0f);
         cell->setOutlineColor(sf::Color::White);
         parent = this;
+
+        for (int i = -1; i <= 1; i++)
+        {
+            for (int j = -1; j <= 1; j++)
+            {
+                int r = rn + i;
+                int c = cn + j;
+                if (r >= 0 && c >= 0 && r < rows && c < cols)
+                {
+                    adj[i + 1][j + 1].rowNo = r;
+                    adj[i + 1][j + 1].colNo = c;
+                    if ((i == 1 || i == -1) && (j == 1 || j == -1))
+                    {
+                        adj[i + 1][j + 1].cost = 14;
+                    }
+                    else if (i == 0 && j == 0)
+                    {
+                        adj[i + 1][j + 1].cost = 0;
+                    }
+                    else
+                    {
+                        adj[i + 1][j + 1].cost = 10;
+                    }
+                }
+                else
+                {
+                    adj[i + 1][j + 1].cost = INFINITY;
+                }
+            }
+        }
     }
     void DrawCell(sf::RenderWindow &window)
     {
@@ -114,7 +105,7 @@ public:
 class Grid
 {
 public:
-    Cell cells[10][10];
+    Cell cells[70][70];
     int rows;
     int cols;
     float cellWidth, cellHeight;
@@ -141,6 +132,7 @@ public:
         // For resetting the app
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::C))
         {
+            tracker = 0;
             for (int i = 0; i < rows; i++)
             {
                 for (int j = 0; j < cols; j++)
@@ -150,7 +142,7 @@ public:
                     cells[i][j].isDestination = false;
                     cells[i][j].isBlocked = false;
                     cells[i][j].isVisited = false;
-                    tracker = 0;
+                    cells[i][j].distanceFromSource = INFINITY;
                 }
             }
         }
@@ -160,7 +152,7 @@ public:
         {
             for (int j = 0; j < cols; j++)
             {
-                if (!cells[i][j].isSource && !cells[i][j].isDestination && !cells[i][j].isBlocked)
+                if (!cells[i][j].isSource && !cells[i][j].isDestination && !cells[i][j].isBlocked && !cells[i][j].isVisited)
                 {
                     cells[i][j].cell->setFillColor(sf::Color::Transparent);
                 }
@@ -173,7 +165,7 @@ public:
         int columnUnderMouse = mousePos.x / cellWidth;
 
         // For hovering effect
-        if (rowUnderMouse >= 0 && rowUnderMouse < rows && columnUnderMouse >= 0 && columnUnderMouse < cols && !cells[rowUnderMouse][columnUnderMouse].isSource && !cells[rowUnderMouse][columnUnderMouse].isBlocked && !cells[rowUnderMouse][columnUnderMouse].isDestination)
+        if (rowUnderMouse >= 0 && rowUnderMouse < rows && columnUnderMouse >= 0 && columnUnderMouse < cols && !cells[rowUnderMouse][columnUnderMouse].isSource && !cells[rowUnderMouse][columnUnderMouse].isBlocked && !cells[rowUnderMouse][columnUnderMouse].isDestination && !cells[rowUnderMouse][columnUnderMouse].isVisited)
         {
             cells[rowUnderMouse][columnUnderMouse].cell->setFillColor(sf::Color::Blue);
         }
@@ -226,22 +218,32 @@ public:
     }
     Cell *getNearestNode()
     {
-        int minValue = cells[0][0].distanceFromSource;
-        Cell *minNode = &cells[0][0];
+        int minValue = INFINITY;
+        Cell *minNode = nullptr;
         for (int i = 0; i < rows; i++)
         {
             for (int j = 0; j < cols; j++)
             {
-                if (!cells[i][j].isVisited && cells[i][j].distanceFromSource < minValue)
+                if (!cells[i][j].isVisited && cells[i][j].distanceFromSource < minValue && !cells[i][j].isBlocked)
                 {
                     minNode = &cells[i][j];
+                    minValue = cells[i][j].distanceFromSource;
                 }
             }
         }
         return minNode;
     }
 
-    void dijkastra()
+    void displayFinal(Cell *dest)
+    {
+        while (!dest->parent->isSource)
+        {
+            dest = dest->parent;
+            dest->cell->setFillColor(sf::Color::Cyan);
+        }
+    }
+
+    void dijkastra(sf::RenderWindow &window)
     {
         for (int i = 0; i < rows; i++)
         {
@@ -249,16 +251,30 @@ public:
             {
                 Cell *nearest = getNearestNode();
                 nearest->isVisited = true;
+                visitCount++;
                 nearest->cell->setFillColor(sf::Color::Magenta);
-                for (int k = 0; k < rows; k++)
+                if (nearest->isSource)
                 {
-                    for (int l = 0; l < cols; l++)
+                    nearest->cell->setFillColor(sf::Color::Green);
+                }
+                if (nearest->isDestination)
+                {
+                    nearest->cell->setFillColor(sf::Color::Red);
+                    displayFinal(nearest);
+                    sf::sleep(sf::seconds(1.0f));
+                    return;
+                }
+
+                for (int k = 0; k < 3; k++)
+                {
+                    for (int l = 0; l < 3; l++)
                     {
-                        if (costMatrix[nearest->rowNo][nearest->colNo][k][l] != INFINITY &&
-                            cells[k][l].distanceFromSource > nearest->distanceFromSource + costMatrix[nearest->rowNo][nearest->colNo][k][l])
+
+                        Cell &c1 = cells[nearest->adj[k][l].rowNo][nearest->adj[k][l].colNo];
+                        if (nearest->adj[k][l].cost != INFINITY && (c1.distanceFromSource > (nearest->distanceFromSource + nearest->adj[k][l].cost)))
                         {
-                            cells[k][l].distanceFromSource = nearest->distanceFromSource + costMatrix[nearest->rowNo][nearest->colNo][k][l];
-                            cells[k][l].parent = nearest;
+                            c1.distanceFromSource = nearest->distanceFromSource + nearest->adj[k][l].cost;
+                            c1.parent = nearest;
                         }
                     }
                 }
@@ -266,41 +282,6 @@ public:
         }
     }
 };
-
-int rows = 10;
-int cols = 10;
-int totalNodes = rows * cols;
-void init(int nodes)
-{
-    for (int i = 0; i < rows; i++)
-    {
-        for (int j = 0; j < cols; j++)
-        {
-            for (int k = 0; k < rows; k++)
-            {
-                for (int l = 0; l < rows; l++)
-                {
-                    if (i == k && j == k)
-                    {
-                        costMatrix[i][j][k][l] = 0;
-                    }
-                    else if (i + 1 == k && j == l || i - 1 == k && j == l || i == k && j + 1 == l || i == k && j - 1 == l)
-                    {
-                        costMatrix[i][j][k][l] = 10;
-                    }
-                    else if (i + 1 == k && j + 1 == l || i + 1 == k && j - 1 == l || i - 1 == k && j + 1 == l || i - 1 == k && j - 1 == l)
-                    {
-                        costMatrix[i][j][k][l] = 14;
-                    }
-                    else
-                    {
-                        costMatrix[i][j][k][l] = INFINITY;
-                    }
-                }
-            }
-        }
-    }
-}
 
 int main()
 {
@@ -314,7 +295,6 @@ int main()
 
     Grid g1;
     g1.createGrid(rows, cols, cellWidth, cellHeight);
-    init(rows * cols);
 
     while (window.isOpen())
     {
@@ -328,8 +308,7 @@ int main()
 
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::G))
         {
-            g1.dijkastra();
-            startAlgo = false;
+            g1.dijkastra(window);
         }
 
         window.clear(sf::Color(240, 240, 240)); // Light grey background, close to white
