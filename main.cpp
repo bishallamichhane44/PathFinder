@@ -324,7 +324,7 @@ public:
 
                 drawGrid(window);
                 window.display();
-                sf::sleep(sf::seconds(0.1f));
+                sf::sleep(sf::seconds(0.01f));
 
                 if (nearest->isSource)
                 {
@@ -366,7 +366,7 @@ public:
                 nearest->cell->setFillColor(sf::Color::Magenta);
                 drawGrid(window);
                 window.display();
-                sf::sleep(sf::seconds(0.1f));
+                sf::sleep(sf::seconds(0.01f));
                 if (nearest->isSource)
                 {
                     nearest->cell->setFillColor(sf::Color::Green);
