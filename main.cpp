@@ -6,6 +6,17 @@
 #include <cmath>
 using namespace std;
 
+//colors 
+// background = sf::Color(0xDC, 0xF2, 0xF1)
+// blockade = sf::Color(0x0F, 0x10, 0x35) 
+// path = sf::Color(0xFF, 0xBA ,0x86)
+// trials = sf::Color(0x7F, 0xC7 ,0xD9) 
+// start = sf::Color(0x17, 0x6B ,0x87) 176B87
+// end = sf::Color(0xD2, 0x45 ,0x45) D24545 
+// cursor = sf::Color(0x61, 0x67 ,0x7A) 61677A
+
+
+
 const int INF = 10000;
 int rows = 36;
 int cols = 64;
@@ -63,11 +74,11 @@ public:
         cell->setPosition(posX, posY);
         if (isVisited)
         {
-            cell->setFillColor(sf::Color::White);
+            cell->setFillColor(sf::Color(0xDC, 0xF2, 0xF1));
             isVisited = false;
         }
-        cell->setOutlineThickness(1.0f);
-        cell->setOutlineColor(sf::Color::Black);
+        cell->setOutlineThickness(0.5f);
+        cell->setOutlineColor(sf::Color(0x2D, 0x32, 0x50,75)); // alternative black
         parent = this;
 
         for (int i = -1; i <= 1; i++)
@@ -128,7 +139,7 @@ public:
 
                 if (cells[i][j].isVisited)
                 {
-                    cells[i][j].cell->setFillColor(sf::Color::White);
+                    cells[i][j].cell->setFillColor(sf::Color(0xDC, 0xF2, 0xF1));
                     cells[i][j].isVisited = false;
                 }
                 cells[i][j].createCell(cellWidth, cellHeight, j * cellWidth, i * cellHeight, i, j);
@@ -160,12 +171,12 @@ public:
         initializeGrid(rows, cols, window);
 
         cells[sourceCell->rowNo][sourceCell->colNo].isSource = true;
-        cells[sourceCell->rowNo][sourceCell->colNo].cell->setFillColor(sf::Color::Green);
+        cells[sourceCell->rowNo][sourceCell->colNo].cell->setFillColor(sf::Color(0x17, 0x6B ,0x87));
         cells[sourceCell->rowNo][sourceCell->colNo].distanceFromSource = 0;
         cells[sourceCell->rowNo][sourceCell->colNo].distanceFromDest = calcDistanceFromDestination(sourceCell->rowNo, sourceCell->colNo);
 
         cells[destCell->rowNo][destCell->colNo].isDestination = true;
-        cells[destCell->rowNo][destCell->colNo].cell->setFillColor(sf::Color::Red);
+        cells[destCell->rowNo][destCell->colNo].cell->setFillColor(sf::Color(0xD2, 0x45 ,0x45));  //ending
         cells[destCell->rowNo][destCell->colNo].distanceFromDest = 0;
     }
 
@@ -178,7 +189,7 @@ public:
         {
             for (int j = 0; j < cols; j++)
             {
-                cells[i][j].cell->setFillColor(sf::Color::White);
+                cells[i][j].cell->setFillColor(sf::Color(0xDC, 0xF2, 0xF1));
                 cells[i][j].isSource = false;
                 cells[i][j].isDestination = false;
                 cells[i][j].isBlocked = false;
@@ -205,7 +216,7 @@ public:
             {
                 if (!cells[i][j].isSource && !cells[i][j].isDestination && !cells[i][j].isBlocked && !cells[i][j].isVisited)
                 {
-                    cells[i][j].cell->setFillColor(sf::Color::White);
+                    cells[i][j].cell->setFillColor(sf::Color(0xDC, 0xF2, 0xF1));
                 }
                 cells[i][j].DrawCell(window);
             }
@@ -218,7 +229,7 @@ public:
         // For hovering effect
         if (rowUnderMouse >= 0 && rowUnderMouse < rows && columnUnderMouse >= 0 && columnUnderMouse < cols && !cells[rowUnderMouse][columnUnderMouse].isSource && !cells[rowUnderMouse][columnUnderMouse].isBlocked && !cells[rowUnderMouse][columnUnderMouse].isDestination && !cells[rowUnderMouse][columnUnderMouse].isVisited)
         {
-            cells[rowUnderMouse][columnUnderMouse].cell->setFillColor(sf::Color::Blue);
+            cells[rowUnderMouse][columnUnderMouse].cell->setFillColor(sf::Color(0x61, 0x67 ,0x7A));
         }
 
         // For mouse Clicks
@@ -229,7 +240,7 @@ public:
             // For starting cell
             if (tracker == 0)
             {
-                cells[rowUnderMouse][columnUnderMouse].cell->setFillColor(sf::Color::Green);
+                cells[rowUnderMouse][columnUnderMouse].cell->setFillColor(sf::Color(0x17, 0x6B ,0x87)); //starting cell
                 cells[rowUnderMouse][columnUnderMouse].isSource = true;
                 cells[rowUnderMouse][columnUnderMouse].distanceFromSource = 0;
                 sourceCell = &cells[rowUnderMouse][columnUnderMouse];
@@ -239,7 +250,7 @@ public:
             // For destination cell
             else if (tracker == 1 && !cells[rowUnderMouse][columnUnderMouse].isSource)
             {
-                cells[rowUnderMouse][columnUnderMouse].cell->setFillColor(sf::Color::Red);
+                cells[rowUnderMouse][columnUnderMouse].cell->setFillColor(sf::Color(0xD2, 0x45 ,0x45)); //ending
                 cells[rowUnderMouse][columnUnderMouse].isDestination = true;
                 cells[rowUnderMouse][columnUnderMouse].distanceFromDest = 0;
                 destCell = &cells[rowUnderMouse][columnUnderMouse];
@@ -250,14 +261,14 @@ public:
             // For Blocking cell
             else if (sf::Keyboard::isKeyPressed(sf::Keyboard::B) && !cells[rowUnderMouse][columnUnderMouse].isSource && !cells[rowUnderMouse][columnUnderMouse].isDestination && !cells[rowUnderMouse][columnUnderMouse].isBlocked)
             {
-                cells[rowUnderMouse][columnUnderMouse].cell->setFillColor(sf::Color::Black);
+                cells[rowUnderMouse][columnUnderMouse].cell->setFillColor(sf::Color(0x0F, 0x10, 0x35));
                 cells[rowUnderMouse][columnUnderMouse].isBlocked = true;
             }
 
             // For removing Blockage
             else if (sf::Keyboard::isKeyPressed(sf::Keyboard::R) && cells[rowUnderMouse][columnUnderMouse].isBlocked)
             {
-                cells[rowUnderMouse][columnUnderMouse].cell->setFillColor(sf::Color::White);
+                cells[rowUnderMouse][columnUnderMouse].cell->setFillColor(sf::Color(0xDC, 0xF2, 0xF1));
                 cells[rowUnderMouse][columnUnderMouse].isBlocked = false;
             }
         }
@@ -307,7 +318,7 @@ public:
         while (!dest->parent->isSource)
         {
             dest = dest->parent;
-            dest->cell->setFillColor(sf::Color::Cyan);
+            dest->cell->setFillColor(sf::Color(0xFF, 0xBA ,0x86));
         }
     }
 
@@ -320,7 +331,7 @@ public:
             {
                 Cell *nearest = getNearestNodeForDijkastra();
                 nearest->isVisited = true;
-                nearest->cell->setFillColor(sf::Color::Magenta);
+                nearest->cell->setFillColor(sf::Color(0x7F, 0xC7 ,0xD9));  //trials
 
                 drawGrid(window);
                 window.display();
@@ -328,11 +339,11 @@ public:
 
                 if (nearest->isSource)
                 {
-                    nearest->cell->setFillColor(sf::Color::Green);
+                    nearest->cell->setFillColor(sf::Color(0x17, 0x6B ,0x87)); //starting
                 }
                 if (nearest->isDestination)
                 {
-                    nearest->cell->setFillColor(sf::Color::Red);
+                    nearest->cell->setFillColor(sf::Color(0xD2, 0x45 ,0x45)); //ending
                     displayFinal(nearest);
                     return;
                 }
@@ -363,17 +374,17 @@ public:
             {
                 Cell *nearest = getNearestNodeForAStar();
                 nearest->isVisited = true;
-                nearest->cell->setFillColor(sf::Color::Magenta);
+                nearest->cell->setFillColor(sf::Color(0x7F, 0xC7 ,0xD9)); //trials
                 drawGrid(window);
                 window.display();
                 sf::sleep(sf::seconds(0.01f));
                 if (nearest->isSource)
                 {
-                    nearest->cell->setFillColor(sf::Color::Green);
+                    nearest->cell->setFillColor(sf::Color(0x17, 0x6B ,0x87)); //starting
                 }
                 if (nearest->isDestination)
                 {
-                    nearest->cell->setFillColor(sf::Color::Red);
+                    nearest->cell->setFillColor(sf::Color(0xD2, 0x45 ,0x45)); //ending
                     displayFinal(nearest);
                     return;
                 }
