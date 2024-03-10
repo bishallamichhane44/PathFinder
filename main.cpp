@@ -142,6 +142,12 @@ public:
                     cells[i][j].cell->setFillColor(sf::Color(0xDC, 0xF2, 0xF1));
                     cells[i][j].isVisited = false;
                 }
+                if (cells[i][j].isBlocked)
+                {
+                    cells[i][j].cell->setFillColor(sf::Color(0x0F, 0x10, 0x35));
+                    cells[i][j].isVisited = false;
+                }
+                
                 cells[i][j].createCell(cellWidth, cellHeight, j * cellWidth, i * cellHeight, i, j);
                 cells[i][j].DrawCell(window);
             }
