@@ -1,0 +1,7 @@
+1.Click anywhere to place start point.
+2.Click anywhere to place end point.
+3.Press and hold 'B' and click and drag mouse to draw blockades.
+4.Press and hold 'R' and click and drag mouse to erase blockades.
+5.Press 'A' to use A* pathfinding algorithm.
+6.Press 'D' to use Dijkastra algorithm
+7.Press 'C' to clear screen.
