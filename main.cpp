@@ -18,8 +18,8 @@ using namespace std;
 
 
 const int INF = 10000;
-int rows = 36;
-int cols = 64;
+int rows = 18;
+int cols = 32;
 
 const float windowWidth = 1280;
 const float windowHeight = 720;

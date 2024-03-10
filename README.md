@@ -10,7 +10,9 @@ A fourth semester project on Data Structures And Algorithms made by Computer Eng
 - [Bipin Bashyal](https://www.github.com/bipinbashyal) (078BCT033)
 - [Ayush KC](https://www.github.com/AyusK4) (078BCT025)
   
+## Screenshots
 
+![Logo](https://github.com/bishallamichhane44/PathFinder/blob/dijkastra/sprites/snap.png?raw=true)
 
 
 
